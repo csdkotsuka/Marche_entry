@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>マルシェ 出店申し込み一覧</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-inner">
+      <div class="header-title-group">
+        <span class="badge-pill">マルシェ運営・共有ビュー</span>
+        <h1>出店申し込み一覧</h1>
+        <p class="last-updated" id="lastUpdated">読み込み中...</p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="btn btn-primary" id="refreshBtn" title="Googleスプレッドシートから最新データを取得">
+          <span class="btn-icon" id="refreshIcon">🔄</span>
+          <span>最新データに更新</span>
+        </button>
+        <button type="button" class="btn btn-secondary" id="copyShareBtn" title="LINEやメールで共有しやすいテキストをコピー">
+          <span class="btn-icon">📋</span>
+          <span>共有テキストをコピー</span>
+        </button>
+        <a
+          href="https://docs.google.com/spreadsheets/d/1JsWTeCi9Kfs2rv6PspxkOYvtq4zkLdSy0gS_qwrfjfM/edit?gid=312516554#gid=312516554"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-ghost"
+          title="元のGoogleスプレッドシートを開く"
+        >
+          <span>シートを開く ↗</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <!-- サマリーカード -->
+    <section class="summary-grid" aria-label="集計サマリー">
+      <div class="summary-card">
+        <div class="summary-label">申し込み総数</div>
+        <div class="summary-value"><span id="totalCount">-</span><span class="summary-unit">件</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">電源使用あり</div>
+        <div class="summary-value accent-amber"><span id="powerCount">-</span><span class="summary-unit">件</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">備品貸出あり</div>
+        <div class="summary-value accent-sage"><span id="equipmentCount">-</span><span class="summary-unit">件</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">質問・備考あり</div>
+        <div class="summary-value accent-terracotta"><span id="questionCount">-</span><span class="summary-unit">件</span></div>
+      </div>
+    </section>
+
+    <!-- コントロールバー -->
+    <section class="controls-bar" aria-label="検索と表示設定">
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="search"
+          id="searchInput"
+          placeholder="屋号・お名前・出店内容・所属会で検索..."
+          aria-label="申し込みを検索"
+        />
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-pills" role="group" aria-label="絞り込み">
+          <button type="button" class="pill active" data-filter="all">すべて</button>
+          <button type="button" class="pill" data-filter="power">電源あり</button>
+          <button type="button" class="pill" data-filter="equipment">備品あり</button>
+          <button type="button" class="pill" data-filter="question">質問あり</button>
+        </div>
+
+        <select id="groupFilter" class="select-input" aria-label="所属会で絞り込み">
+          <option value="all">所属会：すべて</option>
+        </select>
+      </div>
+
+      <div class="view-toggles">
+        <label class="privacy-toggle" title="共有時にメールアドレス・電話番号を隠します">
+          <input type="checkbox" id="privacyToggle" checked />
+          <span class="toggle-track"></span>
+          <span class="toggle-label">連絡先を隠す（共有モード）</span>
+        </label>
+
+        <div class="view-mode-switch" role="group" aria-label="表示形式">
+          <button type="button" class="view-btn active" data-view="cards" title="カード表示">カード</button>
+          <button type="button" class="view-btn" data-view="table" title="テーブル表示">一覧表</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- エラー・お知らせバナー -->
+    <div id="statusBanner" class="status-banner hidden" role="status"></div>
+
+    <!-- 結果件数 -->
+    <div class="results-meta">
+      <span id="visibleCountText">0件を表示中</span>
+    </div>
+
+    <!-- カード表示エリア -->
+    <section id="cardsContainer" class="cards-grid" aria-live="polite"></section>
+
+    <!-- テーブル表示エリア -->
+    <section id="tableContainer" class="table-wrapper hidden" aria-live="polite">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>屋号 / お名前</th>
+            <th>所属・区分</th>
+            <th>出店内容</th>
+            <th>SNS</th>
+            <th>電源</th>
+            <th>備品貸出</th>
+            <th>設営時間</th>
+            <th class="contact-col">連絡先</th>
+            <th>詳細</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </section>
+
+    <!-- 空状態 -->
+    <div id="emptyState" class="empty-state hidden">
+      <p>条件に一致する申し込みが見つかりませんでした。</p>
+    </div>
+  </main>
+
+  <!-- 詳細モーダル -->
+  <div id="detailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="modal-badge" id="modalGroupBadge"></span>
+          <h2 id="modalTitle">詳細情報</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeModalBtn" aria-label="閉じる">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
