@@ -484,6 +484,7 @@ body {
   border-radius: 6px;
   background: var(--surface-alt);
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .tag-power {
@@ -545,6 +546,7 @@ body {
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 .detail-btn:hover {
