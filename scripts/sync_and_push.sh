@@ -3,12 +3,16 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-python3 scripts/sync_data.py
-
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Git repository not initialized yet."
   exit 1
 fi
+
+if git remote get-url origin >/dev/null 2>&1; then
+  git pull --rebase --autostash origin main || true
+fi
+
+python3 scripts/sync_data.py
 
 git add data/applications.csv data/applications.json
 
